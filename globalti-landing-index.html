@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GlobalTI — Calculadora de ROI · Suite de Conciliaciones</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<!-- SheetJS con soporte de estilos -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:#0f2240; --navy-mid:#163358; --blue:#1a5fb4; --blue-lt:#3584e4;
+  --sky:#e8f1fb; --sky-dark:#c5d9f5; --white:#ffffff;
+  --g50:#f8fafc; --g100:#f1f5f9; --g200:#e2e8f0; --g400:#94a3b8; --g500:#64748b; --g700:#334155;
+  --green:#166534; --green-bg:#dcfce7; --green-mid:#15803d;
+  --gold:#b45309; --gold-bg:#fef3c7; --red:#dc2626; --red-bg:#fee2e2;
+  --r:12px; --sh:0 2px 16px rgba(15,34,64,.08); --sh-lg:0 8px 40px rgba(15,34,64,.14);
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--g50);color:var(--g700)}
+.hero{background:var(--navy);padding:72px 24px 88px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 90% 55% at 50% -10%,rgba(26,95,180,.4) 0%,transparent 65%)}
+.hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:48px;background:var(--g50);clip-path:ellipse(55% 100% at 50% 100%)}
+.hero-inner{position:relative;max-width:700px;margin:0 auto}
+.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#93c5fd;font-size:11px;font-weight:600;letter-spacing:.08em;padding:6px 16px;border-radius:100px;margin-bottom:32px;text-transform:uppercase}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:#60a5fa;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(30px,4.5vw,52px);color:#fff;line-height:1.13;margin-bottom:22px}
+.hero p{font-size:17px;color:rgba(255,255,255,.68);line-height:1.75;max-width:520px;margin:0 auto 48px}
+.hero-stats{display:flex;justify-content:center;gap:48px;flex-wrap:wrap}
+.hs{text-align:center}
+.hs strong{display:block;font-family:'DM Serif Display',serif;font-size:32px;color:#fff;line-height:1}
+.hs span{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.04em;text-transform:uppercase;margin-top:4px;display:block}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px 80px}
+.grid-2{display:grid;grid-template-columns:1fr 360px;gap:36px;align-items:start;padding-top:48px}
+@media(max-width:860px){.grid-2{grid-template-columns:1fr}}
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.card+.card{margin-top:24px}
+.ch{padding:22px 28px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;gap:14px}
+.ch-icon{width:42px;height:42px;border-radius:10px;background:var(--sky);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.ch h2{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);font-weight:400}
+.ch p{font-size:12px;color:var(--g500);margin-top:2px}
+.cb{padding:28px}
+.sec-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:14px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+.fg .full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:500;color:var(--g700);display:flex;align-items:center;gap:6px}
+.tip{font-size:10px;font-weight:400;color:var(--g500);background:var(--g100);padding:2px 7px;border-radius:4px}
+.field input{border:1.5px solid var(--g200);border-radius:8px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--navy);outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus{border-color:var(--blue-lt);box-shadow:0 0 0 3px rgba(53,132,228,.14)}
+.hint{font-size:11px;color:var(--g500);line-height:1.4}
+.divider{height:1px;background:var(--g100);margin:4px 0 22px}
+.plan-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px}
+.plan-card{border:2px solid var(--g200);border-radius:10px;padding:16px;cursor:pointer;transition:all .2s;position:relative}
+.plan-card:hover{border-color:var(--blue-lt)}
+.plan-card.selected{border-color:var(--blue);background:var(--sky)}
+.plan-card.selected .plan-name{color:var(--blue)}
+.plan-card input[type=radio]{position:absolute;opacity:0}
+.plan-name{font-weight:600;font-size:14px;color:var(--navy);margin-bottom:6px}
+.plan-ents{font-size:11px;color:var(--g500);margin-bottom:10px}
+.plan-price .setup{font-size:11px;color:var(--g500)}
+.plan-price .setup strong{color:var(--navy)}
+.plan-price .mens{font-size:13px;font-weight:600;color:var(--blue)}
+.plan-badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:4px;margin-bottom:8px;background:var(--sky-dark);color:var(--blue)}
+.btn-primary{width:100%;padding:14px 24px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:24px;transition:background .2s,transform .1s}
+.btn-primary:hover{background:var(--blue)}
+.btn-primary:active{transform:scale(.98)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.btn-dl{width:100%;padding:13px 24px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;transition:background .2s}
+.btn-dl:hover{background:var(--blue-lt)}
+.btn-back{width:100%;padding:10px;background:transparent;color:var(--g500);border:1.5px solid var(--g200);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-top:8px;transition:all .2s}
+.btn-back:hover{border-color:var(--blue-lt);color:var(--blue)}
+.loader{display:none;align-items:center;justify-content:center;gap:10px;padding:20px;color:var(--blue);font-size:14px}
+.loader.on{display:flex}
+.spin{width:20px;height:20px;border:2px solid var(--sky);border-top-color:var(--blue);border-radius:50%;animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.results{display:none}
+.results.on{display:block}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+.kpi{border-radius:10px;padding:16px 18px;border:1px solid var(--g100)}
+.kpi-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--g500);margin-bottom:6px}
+.kpi-val{font-family:'DM Serif Display',serif;font-size:24px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--g500);margin-top:4px}
+.kpi.blue{background:var(--sky)}.kpi.blue .kpi-val{color:var(--navy)}
+.kpi.green{background:var(--green-bg)}.kpi.green .kpi-val{color:var(--green)}
+.kpi.gold{background:var(--gold-bg)}.kpi.gold .kpi-val{color:var(--gold)}
+.kpi.navy{background:var(--navy)}.kpi.navy .kpi-label{color:rgba(255,255,255,.55)}.kpi.navy .kpi-val{color:#fff}.kpi.navy .kpi-sub{color:rgba(255,255,255,.45)}
+.tbl-title{font-size:12px;font-weight:600;color:var(--navy);margin:18px 0 10px;display:flex;align-items:center;gap:6px}
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--g100)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--navy);color:#fff;padding:9px 11px;text-align:center;font-weight:500;white-space:nowrap}
+thead th:first-child{text-align:left;min-width:130px}
+tbody tr:nth-child(even){background:var(--g50)}
+tbody td{padding:7px 11px;text-align:center;white-space:nowrap}
+tbody td:first-child{text-align:left;font-weight:500;color:var(--navy)}
+.tr-inv td{background:var(--red-bg);color:var(--red)}
+.tr-aho td{background:var(--green-bg);color:var(--green-mid)}
+.tr-net td{background:var(--sky);font-weight:700;color:var(--navy)}
+.tr-acum td{background:var(--navy);color:#fff;font-weight:700}
+.tr-hdr td{background:var(--g100);font-weight:700;color:var(--navy);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.neg{color:var(--red)}.pos{color:var(--green-mid)}
+.sidebar{position:sticky;top:24px}
+.trust-list{display:flex;flex-direction:column;gap:14px}
+.ti{display:flex;gap:12px;align-items:flex-start}
+.ti-icon{width:36px;height:36px;border-radius:8px;background:var(--sky);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ti strong{display:block;font-size:13px;color:var(--navy);margin-bottom:2px}
+.ti span{font-size:12px;color:var(--g500);line-height:1.5}
+.gbox{background:var(--gold-bg);border:1px solid #fcd34d;border-radius:10px;padding:16px 18px;margin-top:18px}
+.gbox strong{display:block;font-size:12px;color:var(--gold);margin-bottom:4px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.gbox p{font-size:12px;color:#92400e;line-height:1.55}
+.planes-section{padding:72px 24px;background:#fff;border-top:1px solid var(--g100)}
+.planes-inner{max-width:940px;margin:0 auto}
+.planes-hdr{text-align:center;margin-bottom:40px}
+.planes-hdr .badge{background:var(--sky);color:var(--blue);border:1px solid var(--sky-dark)}
+.planes-hdr h2{font-family:'DM Serif Display',serif;font-size:clamp(26px,3.5vw,38px);color:var(--navy);margin:16px 0 10px}
+.planes-hdr p{font-size:15px;color:var(--g500)}
+.planes-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+@media(max-width:720px){.planes-grid{grid-template-columns:1fr}}
+.plan-box{border:1.5px solid var(--g200);border-radius:14px;padding:28px 24px;display:flex;flex-direction:column;transition:box-shadow .2s}
+.plan-box:hover{box-shadow:var(--sh-lg)}
+.plan-box.featured{border-color:var(--blue);background:var(--navy)}
+.plan-box.featured .pb-name{color:#fff}
+.plan-box.featured .pb-desc{color:rgba(255,255,255,.55)}
+.plan-box.featured .pb-feat li{color:rgba(255,255,255,.8)}
+.plan-box.featured .pb-feat li::before{color:#60a5fa}
+.plan-box.featured .pb-setup-lbl{color:rgba(255,255,255,.5)}
+.plan-box.featured .pb-setup-val{color:#93c5fd}
+.plan-box.featured .pb-mens{color:#fff}
+.plan-box.featured .pb-note{color:rgba(255,255,255,.4)}
+.plan-box.featured .pb-divider{background:rgba(255,255,255,.12)}
+.pb-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:6px;margin-bottom:14px;background:var(--sky-dark);color:var(--blue)}
+.plan-box.featured .pb-badge{background:rgba(255,255,255,.15);color:#93c5fd}
+.pb-name{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);margin-bottom:6px}
+.pb-desc{font-size:13px;color:var(--g500);margin-bottom:18px;line-height:1.5}
+.pb-feat{list-style:none;margin-bottom:22px;display:flex;flex-direction:column;gap:8px}
+.pb-feat li{font-size:13px;color:var(--g700);display:flex;gap:8px}
+.pb-feat li::before{content:'✓';color:var(--green-mid);font-weight:700;flex-shrink:0}
+.pb-divider{height:1px;background:var(--g100);margin-bottom:20px}
+.pb-setup-lbl{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--g500)}
+.pb-setup-val{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:10px}
+.pb-mens{font-family:'DM Serif Display',serif;font-size:28px;color:var(--navy)}
+.pb-mens span{font-size:13px;font-family:'DM Sans',sans-serif;font-weight:400;color:var(--g500)}
+.pb-note{font-size:11px;color:var(--g400);margin-top:6px;font-style:italic}
+.pb-cta{margin-top:auto;padding-top:22px;display:block;text-align:center;text-decoration:none;padding:12px;border-radius:9px;font-size:13px;font-weight:600;transition:all .2s}
+.pb-cta.outline{border:1.5px solid var(--g200);color:var(--navy);background:transparent}
+.pb-cta.outline:hover{border-color:var(--blue);color:var(--blue)}
+.pb-cta.solid{background:var(--blue-lt);color:#fff}
+.pb-cta.solid:hover{background:var(--blue)}
+.pb-cta.wa{background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px}
+.pb-cta.wa:hover{background:#1ebe5c}
+.planes-note{text-align:center;font-size:12px;color:var(--g500);margin-top:28px}
+.planes-note strong{color:var(--navy)}
+.btn-wa{display:inline-flex;align-items:center;gap:8px;background:#25d366;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;transition:background .2s}
+.btn-wa:hover{background:#1ebe5c}
+footer{padding:32px 24px;text-align:center;border-top:1px solid var(--g100);font-size:12px;color:var(--g500)}
+footer a{color:var(--blue);text-decoration:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.ai{animation:fadeUp .4s ease both}
+.d1{animation-delay:.07s}.d2{animation-delay:.14s}.d3{animation-delay:.21s}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="badge"><span class="badge-dot"></span>GlobalTI · RPA + IA</div>
+    <h1>¿Cuánto le cuesta a tu empresa<br><em style="font-style:italic;color:#93c5fd">conciliar de forma manual?</em></h1>
+    <p>Completá los datos de tu operación y calculá en segundos el retorno de inversión de automatizar tus conciliaciones con nuestra Suite RPA.</p>
+    <div class="hero-stats">
+      <div class="hs"><strong>80%+</strong><span>Automatización garantizada</span></div>
+      <div class="hs"><strong>&lt;12m</strong><span>Payback típico</span></div>
+      <div class="hs"><strong>2</strong><span>Planes disponibles</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="grid-2">
+  <div>
+    <div class="card ai" id="form-card">
+      <div class="ch"><div class="ch-icon">📋</div><div><h2>Datos de tu operación</h2><p>Completá los campos y calculá tu ROI al instante</p></div></div>
+      <div class="cb">
+        <div class="sec-label">Tu empresa</div>
+        <div class="fg">
+          <div class="field full"><label>Nombre de empresa <span class="tip">Opcional</span></label><input type="text" id="empresa" placeholder="Ej: Mi Empresa S.A."></div>
+          <div class="field"><label>Personas que concilian</label><input type="number" id="personas" value="2" min="1" max="50"><span class="hint">Analistas / contadores involucrados</span></div>
+          <div class="field"><label>Horas totales / mes <span class="tip">Todo el equipo</span></label><input type="number" id="horas" value="90" min="1" max="999"><span class="hint">Suma de horas de todas las personas</span></div>
+          <div class="field"><label>Sueldo promedio (USD/mes)</label><input type="number" id="sueldo" value="400" min="100" max="20000"><span class="hint">Por persona del equipo conciliador</span></div>
+          <div class="field"><label>Entidades a conciliar</label><input type="number" id="entidades" value="5" min="1" max="99" oninput="onEntidades(this.value)"><span class="hint">Bancos + procesadoras + bocas de cobranza</span></div>
+        </div>
+        <div id="alert-enterprise" style="display:none;background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:16px 18px;margin-bottom:16px">
+          <p style="font-size:13px;color:#92400e;font-weight:600;margin-bottom:8px">⚠️ Para 11 o más entidades necesitás un plan personalizado</p>
+          <p style="font-size:12px;color:#92400e;margin-bottom:12px">Nuestro equipo comercial diseñará una propuesta a medida para tu volumen de operaciones.</p>
+          <a href="https://wa.me/595983724744?text=Hola%20GlobalTI%2C%20necesito%20cotización%20para%20más%20de%2010%20entidades" target="_blank" class="btn-wa">💬 Contactar por WhatsApp</a>
+        </div>
+        <div class="divider"></div>
+        <div class="sec-label">Seleccioná tu plan</div>
+        <div class="plan-cards" id="plan-cards">
+          <label class="plan-card selected" id="lbl-explora" onclick="selectPlan('explora')">
+            <input type="radio" name="plan" value="explora" checked>
+            <div class="plan-name">🔷 Explora</div>
+            <div class="plan-ents">Hasta 5 entidades</div>
+            <div class="plan-price"><div class="setup">Setup: <strong>USD 2.000</strong></div><div class="mens">USD 700 / mes</div></div>
+          </label>
+          <label class="plan-card" id="lbl-impulsa" onclick="selectPlan('impulsa')">
+            <input type="radio" name="plan" value="impulsa">
+            <div class="plan-badge">Más completo</div>
+            <div class="plan-name">⚡ Impulsa</div>
+            <div class="plan-ents">Hasta 10 entidades</div>
+            <div class="plan-price"><div class="setup">Setup: <strong>USD 3.200</strong></div><div class="mens">USD 1.200 / mes</div></div>
+          </label>
+        </div>
+        <p class="hint" style="margin-top:6px">El plan se selecciona automáticamente según tus entidades.</p>
+        <button class="btn-primary" id="btn-calc" onclick="calcular()">⚡ Calcular mi ROI ahora</button>
+        <div class="loader" id="loader"><div class="spin"></div> Calculando tu retorno...</div>
+      </div>
+    </div>
+
+    <div class="card results ai d1" id="res-card" style="margin-top:24px">
+      <div class="ch"><div class="ch-icon">📈</div><div><h2>Tu análisis de ROI</h2><p id="res-sub">Resultados personalizados</p></div></div>
+      <div class="cb">
+        <div class="kpi-grid" id="kpi-grid"></div>
+        <div class="tbl-title">📊 Flujo de caja — Año 1 (12 meses)</div>
+        <div class="tbl-wrap"><table id="tbl-flujo"></table></div>
+        <div class="tbl-title" style="margin-top:20px">⚖️ Comparativo Año 1 vs Año 2</div>
+        <div class="tbl-wrap"><table id="tbl-comp"></table></div>
+        <button class="btn-dl" onclick="descargar()">⬇️ Descargar Excel con mis resultados</button>
+        <button class="btn-back" onclick="resetear()">← Modificar datos</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="card ai d2">
+      <div class="ch"><div class="ch-icon">🔷</div><div><h2>Qué incluye la Suite</h2><p>Operación 24/7 desde el día 1</p></div></div>
+      <div class="cb">
+        <div class="trust-list">
+          <div class="ti"><div class="ti-icon">🤖</div><div><strong>Robot RPA + IA autónomo</strong><span>Descarga, normaliza y concilia sin intervención manual.</span></div></div>
+          <div class="ti"><div class="ti-icon">📊</div><div><strong>Panel de control en tiempo real</strong><span>Reportes de conciliados y diferencias. Alertas automáticas.</span></div></div>
+          <div class="ti"><div class="ti-icon">🔧</div><div><strong>Soporte y mantenimiento incluido</strong><span>SLA garantizado. Respuesta en 2hs para incidentes críticos.</span></div></div>
+          <div class="ti"><div class="ti-icon">📅</div><div><strong>Implementación en 2-3 semanas</strong><span>Por entidad, desde el kickoff hasta producción.</span></div></div>
+        </div>
+        <div class="gbox"><strong>✅ Garantía de resultado</strong><p>Si a los 90 días no alcanzamos el 70% de automatización, podés rescindir sin penalidad.</p></div>
+      </div>
+    </div>
+    <div class="card ai d3" style="margin-top:20px">
+      <div class="cb" style="padding:20px;text-align:center">
+        <p style="font-size:13px;color:var(--g500);margin-bottom:14px">¿Preferís hablar con un asesor?</p>
+        <a href="https://wa.me/595983724744?text=Hola%20GlobalTI%2C%20quiero%20una%20demo%20de%20la%20Suite%20de%20Conciliaciones" target="_blank" class="btn-wa" style="justify-content:center">💬 WhatsApp +595 983 724 744</a>
+        <p style="font-size:11px;color:var(--g400);margin-top:10px">rpa.servicios@globalti.com.py</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<section class="planes-section">
+  <div class="planes-inner">
+    <div class="planes-hdr">
+      <div class="badge">🎯 Planes</div>
+      <h2>Elegí el plan que se adapta<br>a tu negocio</h2>
+      <p>Costo fijo mensual · ROI garantizado · Escalable según tu crecimiento</p>
+    </div>
+    <div class="planes-grid">
+      <div class="plan-box">
+        <div class="pb-badge">Starter</div>
+        <div class="pb-name">Explora</div>
+        <div class="pb-desc">Ideal para empresas con hasta 5 fuentes de datos a conciliar.</div>
+        <ul class="pb-feat"><li>Hasta 5 entidades</li><li>Robot RPA + IA 24/7</li><li>Panel de reportes y alertas</li><li>Soporte con SLA garantizado</li><li>USD 140 por entidad/mes</li></ul>
+        <div class="pb-divider"></div>
+        <div class="pb-setup-lbl">Setup inicial</div>
+        <div class="pb-setup-val">USD 2.000 <small style="font-weight:400;color:var(--g500)">IVA incluido</small></div>
+        <div class="pb-mens">USD 700 <span>/ mes · IVA inc.</span></div>
+        <div class="pb-note">Facturación progresiva por entidad activada</div>
+        <a href="https://wa.me/595983724744?text=Hola%20GlobalTI%2C%20me%20interesa%20el%20plan%20Explora" target="_blank" class="pb-cta outline" style="margin-top:22px">Quiero el plan Explora →</a>
+      </div>
+      <div class="plan-box featured">
+        <div class="pb-badge">Más completo</div>
+        <div class="pb-name">Impulsa</div>
+        <div class="pb-desc" style="color:rgba(255,255,255,.55)">Para operaciones con múltiples bancos, procesadoras y bocas de cobranza.</div>
+        <ul class="pb-feat"><li>Hasta 10 entidades</li><li>Robot RPA + IA 24/7</li><li>Panel de reportes y alertas</li><li>Soporte prioritario con SLA</li><li>USD 120 por entidad/mes</li></ul>
+        <div class="pb-divider"></div>
+        <div class="pb-setup-lbl">Setup inicial</div>
+        <div class="pb-setup-val">USD 3.200 <small style="font-weight:400;color:rgba(255,255,255,.4)">IVA incluido</small></div>
+        <div class="pb-mens">USD 1.200 <span style="color:rgba(255,255,255,.5)">/ mes · IVA inc.</span></div>
+        <div class="pb-note" style="color:rgba(255,255,255,.35)">Facturación progresiva por entidad activada</div>
+        <a href="https://wa.me/595983724744?text=Hola%20GlobalTI%2C%20me%20interesa%20el%20plan%20Impulsa" target="_blank" class="pb-cta solid" style="margin-top:22px">Quiero el plan Impulsa →</a>
+      </div>
+      <div class="plan-box">
+        <div class="pb-badge" style="background:var(--g100);color:var(--g500)">Personalizado</div>
+        <div class="pb-name">A medida</div>
+        <div class="pb-desc">Para operaciones con 11 o más entidades o necesidades específicas.</div>
+        <ul class="pb-feat"><li>Entidades sin límite</li><li>Propuesta personalizada</li><li>SLA dedicado</li><li>Onboarding premium</li></ul>
+        <div class="pb-divider"></div>
+        <div class="pb-mens" style="font-size:22px">Cotización<br><span style="font-size:13px">a medida</span></div>
+        <div class="pb-note">Hablemos de tu caso específico</div>
+        <a href="https://wa.me/595983724744?text=Hola%20GlobalTI%2C%20necesito%20un%20plan%20personalizado%20para%20más%20de%2010%20entidades" target="_blank" class="pb-cta wa" style="margin-top:22px">💬 Contactar un asesor</a>
+      </div>
+    </div>
+    <p class="planes-note"><strong>* Una entidad</strong> = una cuenta bancaria, procesadora de pagos o boca de cobranza</p>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 GlobalTI · Automatización como Servicio (RPA + IA) · Bulnes 830 c/Avda. España, Asunción, Paraguay</p>
+  <p style="margin-top:6px">
+    <a href="mailto:rpa.servicios@globalti.com.py">rpa.servicios@globalti.com.py</a> ·
+    <a href="https://wa.me/595983724744" target="_blank">+595 983 724 744</a> ·
+    <a href="https://www.globalti.com.py" target="_blank">www.globalti.com.py</a>
+  </p>
+</footer>
+
+<script>
+// ── CONSTANTES ────────────────────────────────────────────────
+const PLANES = {
+  explora: { setup:2000, mensual:700,  maxEnt:5,  entPrecio:140, nombre:'Explora' },
+  impulsa: { setup:3200, mensual:1200, maxEnt:10, entPrecio:120, nombre:'Impulsa' },
+};
+const AUTO=0.80, HRS_LAB=160;
+let planActivo='explora', lastData=null;
+
+function selectPlan(p){
+  planActivo=p;
+  document.getElementById('lbl-explora').classList.toggle('selected',p==='explora');
+  document.getElementById('lbl-impulsa').classList.toggle('selected',p==='impulsa');
+}
+function onEntidades(val){
+  const n=parseInt(val)||0;
+  const alerta=document.getElementById('alert-enterprise');
+  const btn=document.getElementById('btn-calc');
+  const pc=document.getElementById('plan-cards');
+  if(n>=11){alerta.style.display='block';btn.disabled=true;pc.style.opacity='.4';pc.style.pointerEvents='none';}
+  else{alerta.style.display='none';btn.disabled=false;pc.style.opacity='1';pc.style.pointerEvents='';
+    selectPlan(n<=5?'explora':'impulsa');}
+}
+function fmtN(n){if(n===null||n===undefined)return'—';const a=Math.abs(Math.round(n));return(n<0?'(':'')+'USD '+a.toLocaleString('es-PY')+(n<0?')':'');}
+function fmtP(n){return(n*100).toFixed(1)+'%';}
+function fmtR(n){return Math.round(n).toLocaleString('es-PY');}
+
+function calcular(){
+  const empresa=document.getElementById('empresa').value.trim()||'Mi Empresa';
+  const personas=+document.getElementById('personas').value||2;
+  const horas=+document.getElementById('horas').value||90;
+  const sueldo=+document.getElementById('sueldo').value||400;
+  const entidades=+document.getElementById('entidades').value||5;
+  const plan=PLANES[planActivo];
+  document.getElementById('loader').classList.add('on');
+  document.getElementById('res-card').classList.remove('on');
+  setTimeout(()=>{
+    lastData=compute(empresa,personas,horas,sueldo,entidades,plan);
+    render(lastData);
+    document.getElementById('loader').classList.remove('on');
+    document.getElementById('res-card').classList.add('on');
+    document.getElementById('res-card').scrollIntoView({behavior:'smooth',block:'start'});
+  },550);
+}
+
+function compute(empresa,personas,horas,sueldo,entidades,plan){
+  const costoHora=sueldo/HRS_LAB;
+  const costoMens=horas*costoHora*personas;
+  const ahorroMens=costoMens*AUTO;
+  const ahorroAnual=ahorroMens*12;
+  const m2=Math.min(entidades>=2?2:entidades,entidades);
+  const m3=Math.min(entidades>=4?4:entidades,entidades);
+  const cron=Array.from({length:12},(_,i)=>i===0?0:i===1?m2:i===2?m3:entidades);
+  const tarEnt=plan.mensual/plan.maxEnt;
+  const flujos=cron.map((ents,i)=>{
+    const s1=i===0?plan.setup/2:0;
+    const s2=i===1?plan.setup/2:0;
+    const tar=Math.round(ents*tarEnt);
+    const inv=s1+s2+tar;
+    const err=Math.round(costoMens*0.05);
+    const aho=Math.round(ahorroMens);
+    const totAho=aho+err;
+    return{mes:i+1,ents,s1,s2,tar,inv,ahorro:aho,errores:err,totAho,neto:totAho-inv};
+  });
+  let acum=0;
+  flujos.forEach(f=>{acum+=f.neto;f.acum=acum;});
+  const invA1=plan.setup+cron.reduce((s,e)=>s+Math.round(e*tarEnt),0);
+  const ahoAnualTotal=Math.round(ahorroAnual+costoMens*0.05*12);
+  const benefA1=ahoAnualTotal-invA1;
+  const roiA1=invA1>0?benefA1/invA1:0;
+  const invA2=plan.mensual*12;
+  const benefA2=ahoAnualTotal-invA2;
+  const roiA2=invA2>0?benefA2/invA2:0;
+  let payback=null,pb=0;
+  for(let i=0;i<24;i++){const err2=Math.round(costoMens*0.05);pb+=(Math.round(ahorroMens)+err2)-(i<12?flujos[i].inv:plan.mensual);if(pb>=0&&!payback)payback=i+1;}
+  const acum24=flujos[11].acum+benefA2;
+  return{empresa,personas,horas,sueldo,entidades,plan,costoHora,costoMens,
+    ahorroMens:Math.round(ahorroMens),ahorroAnual:Math.round(ahorroAnual),
+    ahoAnualTotal,invA1,benefA1,roiA1,invA2,benefA2,roiA2,
+    payback,acum24,flujos,cron};
+}
+
+function render(d){
+  document.getElementById('res-sub').textContent=`${d.empresa} · Plan ${d.plan.nombre} · ${d.entidades} entidades`;
+  const kpis=[
+    {l:'Ahorro mensual estimado',v:fmtN(d.ahorroMens),s:'en horas de personal liberadas',c:'blue'},
+    {l:'ROI Año 1',v:fmtP(d.roiA1),s:'con setup y activación progresiva',c:d.roiA1>=0?'green':'kpi'},
+    {l:'ROI Año 2',v:fmtP(d.roiA2),s:'sin setup · tarifa plena',c:'green'},
+    {l:'Payback estimado',v:d.payback?`Mes ${d.payback}`:'>24m',s:'mes en que el acumulado cruza 0',c:'gold'},
+    {l:'Beneficio neto Año 1',v:fmtN(d.benefA1),s:'ahorro − inversión total',c:'blue'},
+    {l:'ROI acumulado 24 meses',v:fmtN(d.acum24),s:'beneficio neto en 2 años',c:'navy'},
+  ];
+  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`<div class="kpi ${k.c}"><div class="kpi-label">${k.l}</div><div class="kpi-val">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+  const mHead=d.flujos.map(f=>`<th>M${f.mes}</th>`).join('');
+  const row=(lbl,vals,cls='')=>{
+    const tds=vals.map(v=>{if(typeof v==='string')return`<td>${v}</td>`;const r=Math.round(v);const cc=r<0?'neg':(r>0?'pos':'');return`<td class="${cc}">${fmtR(r)}</td>`;}).join('');
+    return`<tr class="${cls}"><td>${lbl}</td>${tds}</tr>`;
+  };
+  document.getElementById('tbl-flujo').innerHTML=`
+    <thead><tr><th>Concepto</th>${mHead}</tr></thead>
+    <tbody>
+      <tr class="tr-hdr"><td colspan="${d.flujos.length+1}">▌ INVERSIÓN</td></tr>
+      ${row('  Setup (cuotas)',d.flujos.map(f=>-(f.s1+f.s2)),'tr-inv')}
+      ${row('  Tarifa mensual',d.flujos.map(f=>-f.tar),'tr-inv')}
+      ${row('TOTAL INVERSIÓN',d.flujos.map(f=>-f.inv),'tr-inv')}
+      <tr class="tr-hdr"><td colspan="${d.flujos.length+1}">▌ AHORROS</td></tr>
+      ${row('  Ahorro personal',d.flujos.map(f=>f.ahorro),'tr-aho')}
+      ${row('  Ahorro errores (5%)',d.flujos.map(f=>f.errores),'tr-aho')}
+      ${row('TOTAL AHORRO',d.flujos.map(f=>f.totAho),'tr-aho')}
+      <tr class="tr-hdr"><td colspan="${d.flujos.length+1}">▌ RESULTADO</td></tr>
+      ${row('Resultado neto',d.flujos.map(f=>f.neto),'tr-net')}
+      ${row('Acumulado',d.flujos.map(f=>f.acum),'tr-acum')}
+    </tbody>`;
+  const roi24=(d.ahoAnualTotal*2-(d.invA1+d.invA2))/(d.invA1+d.invA2);
+  const rows2=[
+    ['Inversión total',fmtN(d.invA1),fmtN(d.invA2)],
+    ['Ahorro generado',fmtN(d.ahoAnualTotal),fmtN(d.ahoAnualTotal)],
+    ['Beneficio neto',fmtN(d.benefA1),fmtN(d.benefA2)],
+    ['ROI del período',fmtP(d.roiA1),fmtP(d.roiA2)],
+    ['Setup incluido',fmtN(d.plan.setup),'USD 0'],
+    ['Tarifa promedio/mes',fmtN(Math.round(d.invA1/12-d.plan.setup/12)),fmtN(d.plan.mensual)],
+    ['ROI acumulado 24m',fmtN(d.acum24),fmtP(roi24)],
+  ];
+  document.getElementById('tbl-comp').innerHTML=`
+    <thead><tr><th>Indicador</th><th>Año 1</th><th>Año 2</th></tr></thead>
+    <tbody>${rows2.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody>`;
+}
+function resetear(){document.getElementById('res-card').classList.remove('on');document.getElementById('form-card').scrollIntoView({behavior:'smooth'});}
+
+// ══════════════════════════════════════════════════════════════
+// DESCARGA EXCEL FORMATEADO — llama al API en Render
+// ══════════════════════════════════════════════════════════════
+
+// 🔧 CONFIGURACIÓN: reemplazá con la URL de tu API en Render
+const API_URL = "https://globalti-excel-api.onrender.com/generate-excel";
+
+async function descargar() {
+  if (!lastData) return;
+  const d = lastData;
+  const btn = document.querySelector('.btn-dl');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<div class="spin" style="width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite;display:inline-block"></div> Generando Excel formateado...';
+  btn.disabled = true;
+
+  const payload = {
+    empresa:       d.empresa,
+    plan_nombre:   d.plan.nombre,
+    personas:      d.personas,
+    horas:         d.horas,
+    sueldo:        d.sueldo,
+    entidades:     d.entidades,
+    entidades_plan:d.plan.maxEnt,
+    setup:         d.plan.setup,
+    mensual:       d.plan.mensual,
+    auto_pct:      AUTO,
+    costo_hora:    +d.costoHora.toFixed(4),
+    costo_mens:    d.costoMens,
+    ahorro_mens:   d.ahorroMens,
+    ahorro_anual:  d.ahorroAnual,
+    inv_a1:        d.invA1,
+    benef_a1:      d.benefA1,
+    roi_a1:        d.roiA1,
+    inv_a2:        d.invA2,
+    benef_a2:      d.benefA2,
+    roi_a2:        d.roiA2,
+    payback:       d.payback || 24,
+    acum24:        d.acum24,
+    roi_a1_pct:    fmtP(d.roiA1),
+    roi_a2_pct:    fmtP(d.roiA2),
+    cron:          d.cron,
+    flujos:        d.flujos.map(f => ({ s1:f.s1, s2:f.s2, tar:f.tar })),
+  };
+
+  try {
+    const res = await fetch(API_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const { b64, filename } = await res.json();
+
+    // Convertir base64 → Blob → descarga
+    const binary = atob(b64);
+    const bytes  = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+
+    btn.innerHTML = "✅ Excel descargado";
+    setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 3000);
+  } catch (err) {
+    console.error(err);
+    btn.innerHTML = "❌ Error — reintentá";
+    btn.style.background = "#dc2626";
+    setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; btn.style.background = ""; }, 4000);
+  }
+}
+
+</script>
+</body>
+</html>
